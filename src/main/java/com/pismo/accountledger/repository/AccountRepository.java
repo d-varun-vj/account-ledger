@@ -1,5 +1,6 @@
 package com.pismo.accountledger.repository;
 
+import com.pismo.accountledger.config.ConfigProperties;
 import com.pismo.accountledger.dto.Account;
 import com.pismo.accountledger.dto.TypeEnum;
 import lombok.RequiredArgsConstructor;
@@ -21,30 +22,29 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class AccountRepository {
     private static final String ACCOUNT_PREFIX = "ACCOUNT#";
+
+    private final ConfigProperties configProperties;
     private final DynamoDbClient dynamoDbClient;
-    //TODO move to properties
-    private static final String TABLE_NAME_LEDGER = "account_ledger";
-    private static final String TABLE_NAME_ACCOUNT_CONSTRAINT = "account_unique_constraint";
+
     //Consider scalable solution
     private static final AtomicInteger COUNTER = new AtomicInteger(1);
 
     public String createAccount(String documentNumber) {
         String accountId = String.valueOf(COUNTER.getAndIncrement());
-        //TODO check if documentNumber already exist
         Map<String, AttributeValue> accountLedgerItem = createAccountLedgerItem(documentNumber, accountId);
         Map<String, AttributeValue> accountConstraintItem = createAccountConstraintItem(documentNumber, accountId);
         TransactWriteItemsRequest request = TransactWriteItemsRequest.builder()
                 .transactItems(
                         TransactWriteItem.builder()
                                 .put(Put.builder()
-                                        .tableName(TABLE_NAME_ACCOUNT_CONSTRAINT)
+                                        .tableName(configProperties.getConstraintTable())
                                         .item(accountConstraintItem)
                                         .conditionExpression("attribute_not_exists(constraint_value)")
                                         .build())
                                 .build(),
                         TransactWriteItem.builder()
                                 .put(Put.builder()
-                                        .tableName(TABLE_NAME_LEDGER)
+                                        .tableName(configProperties.getAccountLedgerTable())
                                         .item(accountLedgerItem)
                                         .build())
                                 .build()
@@ -79,7 +79,7 @@ public class AccountRepository {
         );
 
         var response = dynamoDbClient.getItem(GetItemRequest.builder()
-                .tableName(TABLE_NAME_LEDGER)
+                .tableName(configProperties.getAccountLedgerTable())
                 .key(key)
                 .build());
 
