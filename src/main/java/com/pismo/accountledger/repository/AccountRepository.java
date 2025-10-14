@@ -2,7 +2,7 @@ package com.pismo.accountledger.repository;
 
 import com.pismo.accountledger.config.ConfigProperties;
 import com.pismo.accountledger.dto.Account;
-import com.pismo.accountledger.dto.TypeEnum;
+import com.pismo.accountledger.dto.enums.TypeEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -64,8 +64,8 @@ public class AccountRepository {
 
     private Map<String, AttributeValue> createAccountLedgerItem(String documentNumber, String accountId) {
         return Map.of(
-                "account_id", AttributeValue.builder().s(accountId).build(),
-                "item_id", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build(),
+                "pk", AttributeValue.builder().s(accountId).build(),
+                "sk", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build(),
                 "type", AttributeValue.builder().s(TypeEnum.ACCOUNT.name()).build(),
                 "created_date", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).toString()).build(),
                 "document_number", AttributeValue.builder().s(documentNumber).build()
@@ -74,8 +74,8 @@ public class AccountRepository {
 
     public Optional<Account> getAccount(String accountId) {
         var key = Map.of(
-                "account_id", AttributeValue.builder().s(accountId).build(),
-                "item_id", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build()
+                "pk", AttributeValue.builder().s(accountId).build(),
+                "sk", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build()
         );
 
         var response = dynamoDbClient.getItem(GetItemRequest.builder()

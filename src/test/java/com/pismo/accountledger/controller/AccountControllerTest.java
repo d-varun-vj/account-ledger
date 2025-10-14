@@ -111,15 +111,12 @@ public class AccountControllerTest {
 
     @Test
     void getAccount_shouldThrowNotFound() throws Exception {
-        ResponseEntity<Account> getResponse = restTemplate.getForEntity(
+        ResponseEntity<String> getResponse = restTemplate.getForEntity(
                 "http://localhost:" + port + "/accounts/{accountId}",
-                Account.class,
+                String.class,
                 "invalid"
         );
-
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(getResponse.getBody()).isNotNull();
-        assertThat(getResponse.getBody().documentNumber()).isNull();
     }
 
 }

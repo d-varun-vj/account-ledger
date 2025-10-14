@@ -29,12 +29,12 @@ public class DynamoDbTableInitializer {
             dynamoDbClient.createTable(CreateTableRequest.builder()
                     .tableName("account_ledger")
                     .attributeDefinitions(
-                            AttributeDefinition.builder().attributeName("account_id").attributeType(ScalarAttributeType.S).build(),
-                            AttributeDefinition.builder().attributeName("item_id").attributeType(ScalarAttributeType.S).build()
+                            AttributeDefinition.builder().attributeName("pk").attributeType(ScalarAttributeType.S).build(),
+                            AttributeDefinition.builder().attributeName("sk").attributeType(ScalarAttributeType.S).build()
                     )
                     .keySchema(
-                            KeySchemaElement.builder().attributeName("account_id").keyType(KeyType.HASH).build(),
-                            KeySchemaElement.builder().attributeName("item_id").keyType(KeyType.RANGE).build()
+                            KeySchemaElement.builder().attributeName("pk").keyType(KeyType.HASH).build(),
+                            KeySchemaElement.builder().attributeName("sk").keyType(KeyType.RANGE).build()
                     )
                     .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build())
                     .build());
