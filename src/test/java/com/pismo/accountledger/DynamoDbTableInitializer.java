@@ -24,11 +24,10 @@ public class DynamoDbTableInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void createTable() {
-        String tableName = "account_ledger";
 
         try {
             dynamoDbClient.createTable(CreateTableRequest.builder()
-                    .tableName(tableName)
+                    .tableName("account_ledger")
                     .attributeDefinitions(
                             AttributeDefinition.builder().attributeName("account_id").attributeType(ScalarAttributeType.S).build(),
                             AttributeDefinition.builder().attributeName("item_id").attributeType(ScalarAttributeType.S).build()
@@ -39,9 +38,23 @@ public class DynamoDbTableInitializer {
                     )
                     .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build())
                     .build());
+            System.out.println("Table created. Name: account_ledger");
+            dynamoDbClient.createTable(CreateTableRequest.builder()
+                    .tableName("account_unique_constraint")
+                    .attributeDefinitions(
+                            AttributeDefinition.builder().attributeName("constraint_type").attributeType(ScalarAttributeType.S).build(),
+                            AttributeDefinition.builder().attributeName("constraint_value").attributeType(ScalarAttributeType.S).build()
+                    )
+                    .keySchema(
+                            KeySchemaElement.builder().attributeName("constraint_type").keyType(KeyType.HASH).build(),
+                            KeySchemaElement.builder().attributeName("constraint_value").keyType(KeyType.RANGE).build()
+                    )
+                    .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build())
+                    .build());
+            System.out.println("Table created. Name: account_unique_constraint");
             System.out.println("DynamoDB table created!");
         } catch (ResourceInUseException e) {
-            System.out.println("Table already exists: " + tableName);
+            System.out.println("Table already exists");
         }
     }
 }

@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import java.net.URI;
 
 @Configuration
-//@Profile("!test")
+@Profile("!test")
 public class DynamoDBConfig {
 
     @Value("${aws.region}")
