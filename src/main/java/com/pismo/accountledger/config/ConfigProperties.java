@@ -21,5 +21,7 @@ public class ConfigProperties {
     private String constraintTable;
     @Value("${dynamodb.table.counter}")
     private String counterTable;
+    @Value("${dynamodb.table.txnIdempotency}")
+    private String idempotencyTable;
 
 }

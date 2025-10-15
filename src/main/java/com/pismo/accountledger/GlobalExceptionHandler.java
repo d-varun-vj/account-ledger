@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -64,6 +65,11 @@ public class GlobalExceptionHandler {
         String errorMessage = String.format("Invalid value '%s' for parameter '%s'. Expected type: '%s'.", ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
         ProblemDetail response = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, errorMessage);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler({MissingRequestHeaderException.class})
+    public ResponseEntity<ProblemDetail> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getBody());
     }
 
     @ExceptionHandler(Exception.class)

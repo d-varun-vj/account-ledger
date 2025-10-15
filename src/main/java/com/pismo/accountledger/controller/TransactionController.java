@@ -3,6 +3,8 @@ package com.pismo.accountledger.controller;
 import com.pismo.accountledger.dto.Transaction;
 import com.pismo.accountledger.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -60,8 +63,15 @@ public class TransactionController {
                             schema = @Schema(implementation = Transaction.class)
                     )
             )
-            @Valid @RequestBody Transaction transaction) {
-        var transactionPersisted = transactionService.createTransaction(transaction);
+            @Valid @RequestBody Transaction transaction,
+            @Parameter(
+                    description = "Unique idempotency key for the request",
+                    required = true,
+                    in = ParameterIn.HEADER,
+                    name = "Idempotency-Key"
+            )
+            @RequestHeader("Idempotency-Key") String idempotencyKey) {
+        var transactionPersisted = transactionService.createTransaction(transaction, idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(transactionPersisted);
     }
 }

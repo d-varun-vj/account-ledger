@@ -33,15 +33,16 @@ public class TransactionControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1, 10101, 123",
-            "2, 10102, 123",
-            "3, 10103, 123",
-            "4, 10104, 123"
+            "1, 10101, 123, parameterizedTest1",
+            "2, 10102, 123, parameterizedTest2",
+            "3, 10103, 123, parameterizedTest3",
+            "4, 10104, 123, parameterizedTest4"
     })
     void createTransaction_shouldReturnCreatedTransaction(Long operationTypeId, String documentNumber,
-                                                          double expectedAmount) {
+                                                          double expectedAmount, String idempotencyKey) {
         var accountCreationRequest = new Account(null, documentNumber);
         HttpHeaders headers = new HttpHeaders();
+        headers.add("Idempotency-Key", idempotencyKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         ResponseEntity<Account> response = restTemplate.exchange(
@@ -74,6 +75,7 @@ public class TransactionControllerTest {
     void createTransaction_invalidAccount_throwsException() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("Idempotency-Key", "invalidAccount");
         var transactionRequest = Transaction.builder()
                 .amount(123)
                 .operationTypeId(1L)
@@ -94,7 +96,7 @@ public class TransactionControllerTest {
         var accountCreationRequest = new Account(null, "invalidAccountId");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
+        headers.add("Idempotency-Key", "withoutAccountId");
         ResponseEntity<Account> response = restTemplate.exchange(
                 "http://localhost:" + port + "/accounts",
                 HttpMethod.POST,
@@ -122,7 +124,7 @@ public class TransactionControllerTest {
         var accountCreationRequest = new Account(null, "invalidAmount");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
+        headers.add("Idempotency-Key", "withoutAmount");
         ResponseEntity<Account> response = restTemplate.exchange(
                 "http://localhost:" + port + "/accounts",
                 HttpMethod.POST,
@@ -152,7 +154,7 @@ public class TransactionControllerTest {
         var accountCreationRequest = new Account(null, "invalidOperationId");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
+        headers.add("Idempotency-Key", "withoutOperationTypeId");
         ResponseEntity<Account> response = restTemplate.exchange(
                 "http://localhost:" + port + "/accounts",
                 HttpMethod.POST,
@@ -174,6 +176,35 @@ public class TransactionControllerTest {
         );
         assertThat(transactionResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(transactionResponse.getBody()).contains("Invalid operation type ID");
+    }
+
+    @Test
+    void createTransaction_withoutIdempotencyHeader_throwException() {
+        var accountCreationRequest = new Account(null, "withoutIdempotencyHeader");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<Account> response = restTemplate.exchange(
+                "http://localhost:" + port + "/accounts",
+                HttpMethod.POST,
+                new HttpEntity<>(accountCreationRequest, headers),
+                Account.class
+        );
+        assertThat(response.getBody()).isNotNull();
+        var accountId = response.getBody().accountId();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        var transactionRequest = Transaction.builder()
+                .amount(100.0)
+                .operationTypeId(1L)
+                .accountId(accountId)
+                .build();
+        ResponseEntity<String> transactionResponse = restTemplate.exchange(
+                "http://localhost:" + port + "/transactions",
+                HttpMethod.POST,
+                new HttpEntity<>(transactionRequest, headers),
+                String.class
+        );
+        assertThat(transactionResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(transactionResponse.getBody()).contains("Required header 'Idempotency-Key' is not present.");
     }
 
 }

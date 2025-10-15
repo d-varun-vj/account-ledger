@@ -27,7 +27,7 @@ public class TransactionServiceTest {
         var account = accountService.createAccount("MultipleTransactionTest");
         var transactions = IntStream.rangeClosed(1, 100)
                 .parallel()
-                .mapToObj(i -> transactionService.createTransaction(createTransaction(account.accountId())))
+                .mapToObj(i -> transactionService.createTransaction(createTransaction(account.accountId()), "MultipleTransactionTest" + i))
                 .toList();
         assertThat(transactions).isNotEmpty();
         assertThat(transactions.size()).isEqualTo(100);
@@ -36,6 +36,22 @@ public class TransactionServiceTest {
                 .distinct()
                 .count())
                 .isEqualTo(100);
+    }
+
+    @Test
+    void createMultipleTransaction_withSameIdempotencyKey_ShouldGenerateUniqueIds() {
+        var account = accountService.createAccount("withSameIdempotencyKey");
+        var transactions = IntStream.rangeClosed(1, 100)
+                .parallel()
+                .mapToObj(i -> transactionService.createTransaction(createTransaction(account.accountId()), "MultipleTransactionTest"))
+                .toList();
+        assertThat(transactions).isNotEmpty();
+        assertThat(transactions.size()).isEqualTo(100);
+        assertThat(transactions.stream()
+                .map(Transaction::transactionId)
+                .distinct()
+                .count())
+                .isEqualTo(1);
     }
 
     private Transaction createTransaction(Long accountId) {

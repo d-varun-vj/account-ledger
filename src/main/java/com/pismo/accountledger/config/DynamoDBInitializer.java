@@ -35,12 +35,32 @@ public class DynamoDBInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void createTableIfNotExists() {
-        createAccountLedgerTable(configProperties.getAccountLedgerTable(), "pk", "sk");
+        createAccountLedgerTable();
         insertOperationTypes();
         createCounterTable();
         insertToCounterIfNotExists(TypeEnum.ACCOUNT.name());
         insertToCounterIfNotExists(TypeEnum.TRANSACTION.name());
-        createConstraintTable(configProperties.getConstraintTable(), "constraint_type", "constraint_value");
+        createConstraintTable();
+        createIdempotencyTable();
+    }
+
+    private void createIdempotencyTable() {
+        try {
+            client.createTable(CreateTableRequest.builder()
+                    .tableName(configProperties.getIdempotencyTable())
+                    .keySchema(
+                            KeySchemaElement.builder().attributeName("idempotency_key").keyType(KeyType.HASH).build()
+                    )
+                    .attributeDefinitions(
+                            AttributeDefinition.builder().attributeName("idempotency_key").attributeType(ScalarAttributeType.S).build()
+                    )
+                    .provisionedThroughput(
+                            ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build()
+                    )
+                    .build());
+        } catch (ConditionalCheckFailedException e) {
+            log.error("idempotency table already exist");
+        }
     }
 
     private void createCounterTable() {
@@ -80,17 +100,17 @@ public class DynamoDBInitializer {
                 .build());
     }
 
-    private void createAccountLedgerTable(String configProperties, String pk, String sk) {
+    private void createAccountLedgerTable() {
         try {
             client.createTable(CreateTableRequest.builder()
-                    .tableName(configProperties)
+                    .tableName(configProperties.getAccountLedgerTable())
                     .keySchema(
-                            KeySchemaElement.builder().attributeName(pk).keyType(KeyType.HASH).build(),
-                            KeySchemaElement.builder().attributeName(sk).keyType(KeyType.RANGE).build()
+                            KeySchemaElement.builder().attributeName("pk").keyType(KeyType.HASH).build(),
+                            KeySchemaElement.builder().attributeName("sk").keyType(KeyType.RANGE).build()
                     )
                     .attributeDefinitions(
-                            AttributeDefinition.builder().attributeName(pk).attributeType(ScalarAttributeType.N).build(),
-                            AttributeDefinition.builder().attributeName(sk).attributeType(ScalarAttributeType.S).build()
+                            AttributeDefinition.builder().attributeName("pk").attributeType(ScalarAttributeType.N).build(),
+                            AttributeDefinition.builder().attributeName("sk").attributeType(ScalarAttributeType.S).build()
                     )
                     .provisionedThroughput(
                             ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build()
@@ -101,17 +121,17 @@ public class DynamoDBInitializer {
         }
     }
 
-    private void createConstraintTable(String configProperties, String pk, String sk) {
+    private void createConstraintTable() {
         try {
             client.createTable(CreateTableRequest.builder()
-                    .tableName(configProperties)
+                    .tableName(configProperties.getConstraintTable())
                     .keySchema(
-                            KeySchemaElement.builder().attributeName(pk).keyType(KeyType.HASH).build(),
-                            KeySchemaElement.builder().attributeName(sk).keyType(KeyType.RANGE).build()
+                            KeySchemaElement.builder().attributeName("constraint_type").keyType(KeyType.HASH).build(),
+                            KeySchemaElement.builder().attributeName("constraint_value").keyType(KeyType.RANGE).build()
                     )
                     .attributeDefinitions(
-                            AttributeDefinition.builder().attributeName(pk).attributeType(ScalarAttributeType.S).build(),
-                            AttributeDefinition.builder().attributeName(sk).attributeType(ScalarAttributeType.S).build()
+                            AttributeDefinition.builder().attributeName("constraint_type").attributeType(ScalarAttributeType.S).build(),
+                            AttributeDefinition.builder().attributeName("constraint_value").attributeType(ScalarAttributeType.S).build()
                     )
                     .provisionedThroughput(
                             ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build()
