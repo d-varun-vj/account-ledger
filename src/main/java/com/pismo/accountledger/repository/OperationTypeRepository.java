@@ -1,10 +1,8 @@
 package com.pismo.accountledger.repository;
 
 import com.pismo.accountledger.config.ConfigProperties;
-import com.pismo.accountledger.dto.Account;
 import com.pismo.accountledger.dto.OperationType;
 import com.pismo.accountledger.dto.enums.TypeEnum;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;

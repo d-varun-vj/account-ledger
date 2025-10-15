@@ -1,7 +1,5 @@
 package com.pismo.accountledger.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.pismo.accountledger.config.LocalStackConfig;
 import com.pismo.accountledger.dto.Account;
 import org.junit.jupiter.api.Test;
@@ -11,6 +9,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
