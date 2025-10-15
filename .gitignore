@@ -35,4 +35,3 @@ build/
 .vscode/
 .DS_Store
 .gradle
-gradle
