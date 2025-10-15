@@ -8,7 +8,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.Put;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 
@@ -24,15 +23,6 @@ public class TransactionRepository {
 
     private final ConfigProperties configProperties;
     private final DynamoDbClient dynamoDbClient;
-
-    public void createTransaction(Transaction transaction, double transactionAmount, long transactionId) {
-        Map<String, AttributeValue> transactionItem = createTransactionItem(transaction, transactionId, transactionAmount);
-        PutItemRequest putItemRequest = PutItemRequest.builder()
-                .tableName(configProperties.getAccountLedgerTable())
-                .item(transactionItem)
-                .build();
-        dynamoDbClient.putItem(putItemRequest);
-    }
 
     public void saveIdempotentTransaction(Transaction transaction, double transactionAmount, long transactionId,
                                           String idempotencyKey) {
@@ -56,15 +46,6 @@ public class TransactionRepository {
                 )
                 .build();
         dynamoDbClient.transactWriteItems(request);
-    }
-
-
-    private Map<String, AttributeValue> createAccountConstraintItem(String documentNumber, String accountId) {
-        return Map.of(
-                "constraint_type", AttributeValue.fromS("DOCUMENT_NUMBER"),
-                "constraint_value", AttributeValue.fromS(documentNumber),
-                "account_id", AttributeValue.builder().n(accountId).build()
-        );
     }
 
     private Map<String, AttributeValue> createAccountLedgerItem(String idempotencyKey, long transactionId) {

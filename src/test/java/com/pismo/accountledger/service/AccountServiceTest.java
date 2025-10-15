@@ -2,6 +2,8 @@ package com.pismo.accountledger.service;
 
 import com.pismo.accountledger.config.LocalStackConfig;
 import com.pismo.accountledger.dto.Account;
+import com.pismo.accountledger.exception.DuplicateConstraintException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,5 +34,13 @@ public class AccountServiceTest {
                 .distinct()
                 .count())
                 .isEqualTo(100);
+    }
+
+    @Test
+    void createAccounts_saveSameAccountAgain_ShouldThrowException() {
+        Assertions.assertThrows(DuplicateConstraintException.class, () -> IntStream.rangeClosed(1, 2)
+                .parallel()
+                .mapToObj(i -> accountService.createAccount("DOC"))
+                .toList());
     }
 }
