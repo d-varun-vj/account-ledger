@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTransactionException.class)
     public ProblemDetail handleInvalidTransactionException(InvalidTransactionException ex) {
         log.error("Invalid Transaction, {}", ex.getMessage());
-        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Unexpected server error.");
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problem.setTitle(ex.getMessage());
         return problem;
     }
