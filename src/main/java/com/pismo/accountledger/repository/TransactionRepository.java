@@ -103,7 +103,7 @@ public class TransactionRepository {
             var transaction = Transaction.builder()
                     .transactionId(Long.valueOf(transactionId.substring(TRANSACTION_PREFIX.length())))
                     .accountId(accountId)
-                    .amount(Math.abs(Double.parseDouble(response.item().get("amount").n())))
+                    .amount(Double.parseDouble(response.item().get("amount").n()))
                     .operationTypeId(Long.parseLong(response.item().get("operation_type_id").n()))
                     .build();
             return Optional.of(transaction);

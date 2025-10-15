@@ -57,7 +57,7 @@ public class TransactionServiceImpl implements TransactionService {
             transactionRepository.saveIdempotentTransaction(transaction, transactionAmount, transactionId, idempotencyKey);
             transactionToUse = Transaction.builder()
                     .transactionId(transactionId)
-                    .amount(transaction.amount())
+                    .amount(transactionAmount)
                     .accountId(transaction.accountId())
                     .operationTypeId(transaction.operationTypeId())
                     .build();

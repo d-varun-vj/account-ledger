@@ -33,9 +33,9 @@ public class TransactionControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1, 10101, 123, parameterizedTest1",
-            "2, 10102, 123, parameterizedTest2",
-            "3, 10103, 123, parameterizedTest3",
+            "1, 10101, -123, parameterizedTest1",
+            "2, 10102, -123, parameterizedTest2",
+            "3, 10103, -123, parameterizedTest3",
             "4, 10104, 123, parameterizedTest4"
     })
     void createTransaction_shouldReturnCreatedTransaction(Long operationTypeId, String documentNumber,
