@@ -7,26 +7,28 @@ services:
     container_name: dynamodb-local
     ports:
       - "8000:8000"
-    command: "-jar DynamoDBLocal.jar -inMemory -sharedDb"
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data   # Mount persistent volume
     healthcheck:
       test: [ "CMD-SHELL", "curl -s http://localhost:8000 || exit 1" ]
       interval: 5s
       timeout: 2s
       retries: 10
 
-#  account-ledger-app:
-#    build: .
-#    image: accountledger-account-ledger-app:1.0.0
-#    container_name: account-ledger-app
-#    ports:
-#      - "9040:9040"
-#    depends_on:
-#      - dynamodb-local
-#    environment:
-#      AWS_ACCESS_KEY_ID: dummy
-#      AWS_SECRET_ACCESS_KEY: dummy
-#      AWS_REGION: ap-south-1
-#      DYNAMODB_ENDPOINT: http://localhost:8000
+  account-ledger-app:
+    build: .
+    image: accountledger-account-ledger-app:1.0.0
+    container_name: account-ledger-app
+    ports:
+      - "9040:9040"
+    depends_on:
+      - dynamodb-local
+    environment:
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
+      AWS_REGION: ap-south-1
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
 
 volumes:
   dynamodb-data:
