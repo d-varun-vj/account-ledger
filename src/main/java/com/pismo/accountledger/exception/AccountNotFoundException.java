@@ -2,14 +2,14 @@ package com.pismo.accountledger.exception;
 
 public class AccountNotFoundException extends RuntimeException {
 
-    private final String accountId;
+    private final Long accountId;
 
-    public AccountNotFoundException(String accountId) {
+    public AccountNotFoundException(Long accountId) {
         super("Account not found");
         this.accountId = accountId;
     }
 
-    public String getAccountId() {
+    public Long getAccountId() {
         return accountId;
     }
 }

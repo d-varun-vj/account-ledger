@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,13 +22,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping("/accounts")
 @Tag(name = "Account API", description = "Operations related to customer accounts")
 public class AccountController {
 
     @Autowired
-    private AccountService accountService;
+    private final AccountService accountService;
 
     @Operation(
             summary = "Create a new account",
@@ -82,7 +83,7 @@ public class AccountController {
                     example = "1",
                     required = true
             )
-            @PathVariable(value = "accountId") String accountId) {
+            @PathVariable(value = "accountId") Long accountId) {
         var account = accountService.getAccount(accountId);
         return ResponseEntity.ok(account);
     }

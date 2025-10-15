@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Repository
 @RequiredArgsConstructor
@@ -26,11 +25,7 @@ public class AccountRepository {
     private final ConfigProperties configProperties;
     private final DynamoDbClient dynamoDbClient;
 
-    //Consider scalable solution
-    private static final AtomicInteger COUNTER = new AtomicInteger(1);
-
-    public String createAccount(String documentNumber) {
-        String accountId = String.valueOf(COUNTER.getAndIncrement());
+    public void createAccount(String documentNumber, String accountId) {
         Map<String, AttributeValue> accountLedgerItem = createAccountLedgerItem(documentNumber, accountId);
         Map<String, AttributeValue> accountConstraintItem = createAccountConstraintItem(documentNumber, accountId);
         TransactWriteItemsRequest request = TransactWriteItemsRequest.builder()
@@ -51,20 +46,19 @@ public class AccountRepository {
                 )
                 .build();
         dynamoDbClient.transactWriteItems(request);
-        return accountId;
     }
 
     private Map<String, AttributeValue> createAccountConstraintItem(String documentNumber, String accountId) {
         return Map.of(
                 "constraint_type", AttributeValue.fromS("DOCUMENT_NUMBER"),
                 "constraint_value", AttributeValue.fromS(documentNumber),
-                "account_id", AttributeValue.builder().s(accountId).build()
+                "account_id", AttributeValue.builder().n(accountId).build()
         );
     }
 
     private Map<String, AttributeValue> createAccountLedgerItem(String documentNumber, String accountId) {
         return Map.of(
-                "pk", AttributeValue.builder().s(accountId).build(),
+                "pk", AttributeValue.builder().n(accountId).build(),
                 "sk", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build(),
                 "type", AttributeValue.builder().s(TypeEnum.ACCOUNT.name()).build(),
                 "created_date", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).toString()).build(),
@@ -72,9 +66,10 @@ public class AccountRepository {
         );
     }
 
-    public Optional<Account> getAccount(String accountId) {
+    //TODO change the logic to use enhancedclient
+    public Optional<Account> getAccount(Long accountId) {
         var key = Map.of(
-                "pk", AttributeValue.builder().s(accountId).build(),
+                "pk", AttributeValue.builder().n(String.valueOf(accountId)).build(),
                 "sk", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build()
         );
 
@@ -92,5 +87,17 @@ public class AccountRepository {
         } else {
             return Optional.empty();
         }
+    }
+
+    public boolean existsById(String accountId) {
+        var key = Map.of(
+                "pk", AttributeValue.builder().n(accountId).build(),
+                "sk", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build()
+        );
+        var result = dynamoDbClient.getItem(GetItemRequest.builder()
+                        .tableName(configProperties.getAccountLedgerTable())
+                        .key(key)
+                .build());
+        return result != null && !result.item().isEmpty();
     }
 }

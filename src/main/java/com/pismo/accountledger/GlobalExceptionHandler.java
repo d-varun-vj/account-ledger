@@ -3,6 +3,7 @@ package com.pismo.accountledger;
 import com.pismo.accountledger.exception.AccountNotFoundException;
 import com.pismo.accountledger.exception.DuplicateConstraintException;
 import com.pismo.accountledger.exception.DynamoDBTransactionException;
+import com.pismo.accountledger.exception.InvalidTransactionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -32,6 +33,14 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle(ex.getMessage());
         problem.setProperty("accountId", ex.getAccountId());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidTransactionException.class)
+    public ProblemDetail handleInvalidTransactionException(InvalidTransactionException ex) {
+        log.error("Invalid Transaction, {}", ex.getMessage());
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Unexpected server error.");
+        problem.setTitle(ex.getMessage());
         return problem;
     }
 

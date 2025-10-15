@@ -1,10 +1,12 @@
 package com.pismo.accountledger.service.impl;
 
 import com.pismo.accountledger.dto.Account;
+import com.pismo.accountledger.dto.enums.TypeEnum;
 import com.pismo.accountledger.exception.AccountNotFoundException;
 import com.pismo.accountledger.exception.DuplicateConstraintException;
 import com.pismo.accountledger.exception.DynamoDBTransactionException;
 import com.pismo.accountledger.repository.AccountRepository;
+import com.pismo.accountledger.repository.CounterRepository;
 import com.pismo.accountledger.service.AccountService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,11 +18,13 @@ import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledExcepti
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
+    private final CounterRepository counterRepository;
 
     @Override
     public Account createAccount(String documentNumber) {
         try {
-            var accountId = accountRepository.createAccount(documentNumber);
+            var accountId = counterRepository.getNextId(TypeEnum.ACCOUNT.name());
+            accountRepository.createAccount(documentNumber, String.valueOf(accountId));
             return Account.builder()
                     .accountId(accountId)
                     .documentNumber(documentNumber)
@@ -32,7 +36,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Account getAccount(String accountId) {
+    public Account getAccount(Long accountId) {
         return accountRepository.getAccount(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
     }

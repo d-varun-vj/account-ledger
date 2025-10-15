@@ -19,5 +19,7 @@ public class ConfigProperties {
     private String accountLedgerTable;
     @Value("${dynamodb.table.constraint}")
     private String constraintTable;
+    @Value("${dynamodb.table.counter}")
+    private String counterTable;
 
 }

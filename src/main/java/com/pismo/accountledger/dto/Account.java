@@ -9,7 +9,7 @@ import lombok.Builder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Account(
         @Schema(description = "Unique identifier for the account", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
-        String accountId,
+        Long accountId,
         @Schema(description = "Unique document number identifying the customer", example = "12345678900")
         String documentNumber
 ) {

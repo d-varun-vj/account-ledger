@@ -13,7 +13,7 @@ services:
       interval: 5s
       timeout: 2s
       retries: 10
-#
+
 #  account-ledger-app:
 #    build: .
 #    image: accountledger-account-ledger-app:1.0.0

@@ -29,7 +29,7 @@ public class AccountControllerTest {
     private TestRestTemplate restTemplate;
 
     @Test
-    void createAccount_shouldReturnCreatedAccount() throws Exception {
+    void createAccount_shouldReturnCreatedAccount() {
         Account request = new Account(null, "12669");
 
         HttpHeaders headers = new HttpHeaders();
@@ -51,7 +51,7 @@ public class AccountControllerTest {
     }
 
     @Test
-    void createAccount_shouldReturnConflict() throws Exception {
+    void createAccount_shouldReturnConflict() {
         Account first = new Account(null, "126691");
         Account duplicate = new Account(null, "126691");
 
@@ -81,7 +81,7 @@ public class AccountControllerTest {
     }
 
     @Test
-    void getAccount_shouldReturnAccount() throws Exception {
+    void getAccount_shouldReturnAccount() {
         Account request = new Account(null, "126692");
 
         HttpHeaders headers = new HttpHeaders();
@@ -110,11 +110,11 @@ public class AccountControllerTest {
     }
 
     @Test
-    void getAccount_shouldThrowNotFound() throws Exception {
+    void getAccount_shouldThrowNotFound() {
         ResponseEntity<String> getResponse = restTemplate.getForEntity(
                 "http://localhost:" + port + "/accounts/{accountId}",
                 String.class,
-                "invalid"
+                1001
         );
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
