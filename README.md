@@ -54,6 +54,7 @@ cd account-ledger-service
 ./gradlew clean build
 
 # Run
+docker-compose -f compose.yaml down ## if already running
 docker-compose -f compose.yaml up -d
 ./gradlew bootRun
 ```
