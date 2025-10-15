@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateConstraintException.class)
     public ProblemDetail handleDuplicateConstraint(DuplicateConstraintException ex) {
+        log.error("DuplicateConstraint, {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Conflict");
         problem.setProperty("field", ex.getField());
@@ -30,6 +31,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DynamoDBTransactionException.class)
     public ProblemDetail handleTransactionFailure(DynamoDBTransactionException ex) {
+        log.error("TransactionFailure, {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
         problem.setTitle("DynamoDB Transaction Error");
         return problem;
@@ -37,6 +39,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccountNotFoundException.class)
     public ProblemDetail handleAccountNotFoundException(AccountNotFoundException ex) {
+        log.error("AccountNotFoundException, {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle(ex.getMessage());
         problem.setProperty("accountId", ex.getAccountId());
@@ -62,6 +65,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ProblemDetail> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        log.error("MethodArgumentTypeMismatchException, {}", ex.getMessage());
         String errorMessage = String.format("Invalid value '%s' for parameter '%s'. Expected type: '%s'.", ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
         ProblemDetail response = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, errorMessage);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
@@ -69,6 +73,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({MissingRequestHeaderException.class})
     public ResponseEntity<ProblemDetail> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
+        log.error("MissingRequestHeaderException, {}", ex.getHeaderName());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getBody());
     }
 

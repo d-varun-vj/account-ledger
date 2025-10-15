@@ -11,6 +11,7 @@ import com.pismo.accountledger.repository.TransactionIdempotencyRepository;
 import com.pismo.accountledger.repository.TransactionRepository;
 import com.pismo.accountledger.service.TransactionService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
@@ -31,6 +33,7 @@ public class TransactionServiceImpl implements TransactionService {
         validateTransactionRequestPayload(transaction, operationType.isEmpty());
         Optional<String> existingTransactionId = idempotencyRepository.getTransactionId(idempotencyKey);
         if (existingTransactionId.isPresent()) {
+            log.info("Transaction was already persisted, transactionId {}", existingTransactionId.get());
             return transactionRepository.findByTransactionId(transaction.accountId(), existingTransactionId.get())
                     .orElseThrow(() -> new RuntimeException("Ledger transaction missing"));
         }
@@ -61,11 +64,13 @@ public class TransactionServiceImpl implements TransactionService {
                     .accountId(transaction.accountId())
                     .operationTypeId(transaction.operationTypeId())
                     .build();
+            log.info("Transaction created successfully, transactionId {}", transactionToUse.transactionId());
         } catch (TransactionCanceledException ex) {
             Optional<String> existingTransactionId = idempotencyRepository.getTransactionId(idempotencyKey);
             transactionToUse = existingTransactionId
                     .flatMap(txId -> transactionRepository.findByTransactionId(transaction.accountId(), txId))
                     .orElseThrow(() -> new RuntimeException("Ledger transaction missing"));
+            log.info("Transaction was already persisted, transactionId {}", transactionToUse.transactionId());
         }
         transactionBuilder.transactionId(transactionToUse.transactionId())
                 .amount(transactionToUse.amount())

@@ -4,6 +4,7 @@ import com.pismo.accountledger.config.ConfigProperties;
 import com.pismo.accountledger.dto.Account;
 import com.pismo.accountledger.dto.enums.TypeEnum;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class AccountRepository {
     private static final String ACCOUNT_PREFIX = "ACCOUNT#";
 
@@ -45,6 +47,7 @@ public class AccountRepository {
                                 .build()
                 )
                 .build();
+        log.info("Account created successfully, accountId: {}", accountId);
         dynamoDbClient.transactWriteItems(request);
     }
 

@@ -9,10 +9,12 @@ import com.pismo.accountledger.repository.AccountRepository;
 import com.pismo.accountledger.repository.CounterRepository;
 import com.pismo.accountledger.service.AccountService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
@@ -30,7 +32,8 @@ public class AccountServiceImpl implements AccountService {
                     .documentNumber(documentNumber)
                     .build();
         } catch (TransactionCanceledException ex) {
-            handleTransactionException(ex, documentNumber);
+            log.error("Account creation failed, {}", ex.getMessage());
+            handleTransactionException(ex);
         }
         return Account.builder().build();
     }
@@ -41,7 +44,7 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 
-    private void handleTransactionException(TransactionCanceledException e, String documentNumber) {
+    private void handleTransactionException(TransactionCanceledException e) {
         var reasons = e.cancellationReasons();
 
         if (reasons != null) {
