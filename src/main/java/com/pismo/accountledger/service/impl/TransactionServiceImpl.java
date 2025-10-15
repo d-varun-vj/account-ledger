@@ -1,5 +1,6 @@
 package com.pismo.accountledger.service.impl;
 
+import com.pismo.accountledger.dto.OperationType;
 import com.pismo.accountledger.dto.Transaction;
 import com.pismo.accountledger.dto.enums.TypeEnum;
 import com.pismo.accountledger.exception.InvalidTransactionException;
@@ -21,31 +22,29 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Transaction createTransaction(Transaction transaction) {
-        validateTransactionPayload(transaction);
         var operationType = operationTypeRepository.getOperationById(transaction.operationTypeId());
-        if (operationType.isEmpty()) {
-            throw new InvalidTransactionException("Invalid operation type id: " + transaction.operationTypeId());
-        }
-        var transactionAmount = operationType.get().isCredit() ? transaction.amount() : -transaction.amount();
-        var transactionId = counterRepository.getNextId(TypeEnum.TRANSACTION.name());
-        transactionRepository.createTransaction(transaction, transactionAmount, transactionId);
-        return Transaction.builder()
-                .transactionId(transactionId)
-                .accountId(transaction.accountId())
-                .operationTypeId(transaction.operationTypeId())
-                .amount(transactionAmount)
-                .build();
+        validateTransactionRequestPayload(transaction, operationType.isEmpty());
+        var transactionBuilder = Transaction.builder();
+        operationType.ifPresent(opType -> saveTransaction(transaction, opType, transactionBuilder));
+        return transactionBuilder.build();
     }
 
-    private void validateTransactionPayload(Transaction transaction) {
+    private void validateTransactionRequestPayload(Transaction transaction, boolean isOperationTypeEmpty) {
         if (!accountRepository.existsById(transaction.accountId().toString())) {
             throw new InvalidTransactionException("Invalid Account: " + transaction.accountId());
         }
-
-        // 3. Validate amount
-        if (transaction.amount() == 0.0) {
-            throw new InvalidTransactionException("Amount cannot be zero");
+        if (isOperationTypeEmpty) {
+            throw new InvalidTransactionException("Invalid operation type id: " + transaction.operationTypeId());
         }
+    }
 
+    private void saveTransaction(Transaction transaction, OperationType opType, Transaction.TransactionBuilder transactionBuilder) {
+        var transactionAmount = opType.isCredit() ? transaction.amount() : -transaction.amount();
+        var transactionId = counterRepository.getNextId(TypeEnum.TRANSACTION.name());
+        transactionRepository.createTransaction(transaction, transactionAmount, transactionId);
+        transactionBuilder.transactionId(transactionId)
+                .amount(transaction.amount())
+                .accountId(transaction.accountId())
+                .operationTypeId(transaction.operationTypeId());
     }
 }

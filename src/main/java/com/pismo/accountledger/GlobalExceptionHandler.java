@@ -7,8 +7,14 @@ import com.pismo.accountledger.exception.InvalidTransactionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -42,6 +48,22 @@ public class GlobalExceptionHandler {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Unexpected server error.");
         problem.setTitle(ex.getMessage());
         return problem;
+    }
+
+    @ExceptionHandler({MethodArgumentNotValidException.class})
+    public ResponseEntity<List<ProblemDetail>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        List<ProblemDetail> problemDetails = ex.getBindingResult().getFieldErrors().stream()
+                .map((error) -> ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, error.getDefaultMessage()))
+                .toList();
+        log.error("Request validation error: ", ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetails);
+    }
+
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ProblemDetail> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        String errorMessage = String.format("Invalid value '%s' for parameter '%s'. Expected type: '%s'.", ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
+        ProblemDetail response = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, errorMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(Exception.class)

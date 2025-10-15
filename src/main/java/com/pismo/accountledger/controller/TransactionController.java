@@ -7,10 +7,12 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/transactions")
 @RequiredArgsConstructor
+@Validated
 @Tag(name = "Transaction API", description = "Operations related to customer transactions")
 public class TransactionController {
 
@@ -57,7 +60,7 @@ public class TransactionController {
                             schema = @Schema(implementation = Transaction.class)
                     )
             )
-            @RequestBody Transaction transaction) {
+            @Valid @RequestBody Transaction transaction) {
         var transactionPersisted = transactionService.createTransaction(transaction);
         return ResponseEntity.status(HttpStatus.CREATED).body(transactionPersisted);
     }

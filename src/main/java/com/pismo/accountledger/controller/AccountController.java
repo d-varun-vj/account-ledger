@@ -8,12 +8,13 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.AllArgsConstructor;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/accounts")
+@Validated
 @Tag(name = "Account API", description = "Operations related to customer accounts")
 public class AccountController {
 
@@ -55,7 +57,7 @@ public class AccountController {
                             schema = @Schema(implementation = Account.class)
                     )
             )
-            @RequestBody Account account) {
+            @Valid @RequestBody Account account) {
         var accountPersisted = accountService.createAccount(account.documentNumber());
         return ResponseEntity.status(HttpStatus.CREATED).body(accountPersisted);
     }

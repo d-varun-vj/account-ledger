@@ -33,9 +33,9 @@ public class TransactionControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1, 10101, -123",
-            "2, 10102, -123",
-            "3, 10103, -123",
+            "1, 10101, 123",
+            "2, 10102, 123",
+            "3, 10103, 123",
             "4, 10104, 123"
     })
     void createTransaction_shouldReturnCreatedTransaction(Long operationTypeId, String documentNumber,
@@ -90,8 +90,36 @@ public class TransactionControllerTest {
     }
 
     @Test
-    void createTransaction_invalidAmount_throwsException() {
-        var accountCreationRequest = new Account(null, "documentNumber1");
+    void createTransaction_withoutAccountId_throwValidationException() {
+        var accountCreationRequest = new Account(null, "invalidAccountId");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<Account> response = restTemplate.exchange(
+                "http://localhost:" + port + "/accounts",
+                HttpMethod.POST,
+                new HttpEntity<>(accountCreationRequest, headers),
+                Account.class
+        );
+        assertThat(response.getBody()).isNotNull();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        var transactionRequest = Transaction.builder()
+                .amount(0)
+                .operationTypeId(1L)
+                .build();
+        ResponseEntity<String> transactionResponse = restTemplate.exchange(
+                "http://localhost:" + port + "/transactions",
+                HttpMethod.POST,
+                new HttpEntity<>(transactionRequest, headers),
+                String.class
+        );
+        assertThat(transactionResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(transactionResponse.getBody()).contains("Invalid accountId");
+    }
+
+    @Test
+    void createTransaction_withoutAmount_throwValidationException() {
+        var accountCreationRequest = new Account(null, "invalidAmount");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -105,7 +133,7 @@ public class TransactionControllerTest {
         var accountId = response.getBody().accountId();
         headers.setContentType(MediaType.APPLICATION_JSON);
         var transactionRequest = Transaction.builder()
-                .amount(0)
+                .amount(0.0)
                 .operationTypeId(1L)
                 .accountId(accountId)
                 .build();
@@ -116,7 +144,36 @@ public class TransactionControllerTest {
                 String.class
         );
         assertThat(transactionResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(transactionResponse.getBody()).contains("Amount cannot be zero");
+        assertThat(transactionResponse.getBody()).contains("Amount must be greater than zero");
+    }
+
+    @Test
+    void createTransaction_withoutOperationTypeId_throwValidationException() {
+        var accountCreationRequest = new Account(null, "invalidOperationId");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<Account> response = restTemplate.exchange(
+                "http://localhost:" + port + "/accounts",
+                HttpMethod.POST,
+                new HttpEntity<>(accountCreationRequest, headers),
+                Account.class
+        );
+        assertThat(response.getBody()).isNotNull();
+        var accountId = response.getBody().accountId();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        var transactionRequest = Transaction.builder()
+                .amount(100)
+                .accountId(accountId)
+                .build();
+        ResponseEntity<String> transactionResponse = restTemplate.exchange(
+                "http://localhost:" + port + "/transactions",
+                HttpMethod.POST,
+                new HttpEntity<>(transactionRequest, headers),
+                String.class
+        );
+        assertThat(transactionResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(transactionResponse.getBody()).contains("Invalid operation type ID");
     }
 
 }
