@@ -25,6 +25,9 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Account createAccount(String documentNumber) {
         try {
+            // check constraint table has documentNumber
+            // yes - throw error account already exist
+            // no - create new id and create account
             var accountId = counterRepository.getNextId(TypeEnum.ACCOUNT.name());
             accountRepository.createAccount(documentNumber, String.valueOf(accountId));
             return Account.builder()
