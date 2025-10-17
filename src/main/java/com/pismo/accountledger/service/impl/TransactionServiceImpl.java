@@ -6,8 +6,8 @@ import com.pismo.accountledger.dto.enums.TypeEnum;
 import com.pismo.accountledger.exception.InvalidTransactionException;
 import com.pismo.accountledger.repository.AccountRepository;
 import com.pismo.accountledger.repository.CounterRepository;
+import com.pismo.accountledger.repository.IdempotencyRepository;
 import com.pismo.accountledger.repository.OperationTypeRepository;
-import com.pismo.accountledger.repository.TransactionIdempotencyRepository;
 import com.pismo.accountledger.repository.TransactionRepository;
 import com.pismo.accountledger.service.TransactionService;
 import lombok.AllArgsConstructor;
@@ -17,6 +17,8 @@ import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledExcepti
 
 import java.util.Optional;
 
+import static com.pismo.accountledger.util.Constants.TRANSACTION_PREFIX;
+
 @Service
 @AllArgsConstructor
 @Slf4j
@@ -25,56 +27,47 @@ public class TransactionServiceImpl implements TransactionService {
     private final AccountRepository accountRepository;
     private final OperationTypeRepository operationTypeRepository;
     private final CounterRepository counterRepository;
-    private final TransactionIdempotencyRepository idempotencyRepository;
+    private final IdempotencyRepository idempotencyRepository;
 
     @Override
     public Transaction createTransaction(Transaction transaction, String idempotencyKey) {
-        var operationType = operationTypeRepository.getOperationById(transaction.operationTypeId());
-        validateTransactionRequestPayload(transaction, operationType.isEmpty());
-        Optional<String> existingTransactionId = idempotencyRepository.getTransactionId(idempotencyKey);
-        if (existingTransactionId.isPresent()) {
-            log.info("Transaction was already persisted, transactionId {}", existingTransactionId.get());
-            return transactionRepository.findByTransactionId(transaction.accountId(), existingTransactionId.get())
-                    .orElseThrow(() -> new RuntimeException("Ledger transaction missing"));
-        }
-        var transactionBuilder = Transaction.builder();
-        operationType.ifPresent(opType -> saveTransaction(transaction, opType, transactionBuilder, idempotencyKey));
-        return transactionBuilder.build();
-    }
-
-    private void validateTransactionRequestPayload(Transaction transaction, boolean isOperationTypeEmpty) {
+        var operationType = operationTypeRepository.getOperationById(transaction.operationTypeId())
+                .orElseThrow(() -> new InvalidTransactionException("Invalid operation type id: " + transaction.operationTypeId()));
         if (!accountRepository.existsById(transaction.accountId().toString())) {
             throw new InvalidTransactionException("Invalid Account: " + transaction.accountId());
         }
-        if (isOperationTypeEmpty) {
-            throw new InvalidTransactionException("Invalid operation type id: " + transaction.operationTypeId());
-        }
+        return idempotencyRepository.getTransactionId(idempotencyKey)
+                .map(txnId -> constructExistingTransaction(transaction, txnId))
+                .orElseGet(() -> saveTransaction(transaction, operationType, idempotencyKey));
     }
 
-    private void saveTransaction(Transaction transaction, OperationType opType,
-                                 Transaction.TransactionBuilder transactionBuilder, String idempotencyKey) {
+    private Transaction constructExistingTransaction(Transaction transaction, String txnId) {
+        var txnLongValue = Long.valueOf(txnId.substring(TRANSACTION_PREFIX.length()));
+        log.info("Transaction already persisted, transactionId {}", txnLongValue);
+        return transactionRepository.findByTransactionId(transaction.accountId(), txnId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Ledger transaction missing for transactionId: " + txnLongValue));
+    }
+
+    private Transaction saveTransaction(Transaction transaction, OperationType opType,
+                                        String idempotencyKey) {
         var transactionAmount = opType.isCredit() ? transaction.amount() : -transaction.amount();
         var transactionId = counterRepository.getNextId(TypeEnum.TRANSACTION.name());
-        Transaction transactionToUse;
         try {
             transactionRepository.saveIdempotentTransaction(transaction, transactionAmount, transactionId, idempotencyKey);
-            transactionToUse = Transaction.builder()
+            log.info("Transaction created successfully, transactionId {}", transactionId);
+            return Transaction.builder()
                     .transactionId(transactionId)
                     .amount(transactionAmount)
                     .accountId(transaction.accountId())
                     .operationTypeId(transaction.operationTypeId())
                     .build();
-            log.info("Transaction created successfully, transactionId {}", transactionToUse.transactionId());
         } catch (TransactionCanceledException ex) {
             Optional<String> existingTransactionId = idempotencyRepository.getTransactionId(idempotencyKey);
-            transactionToUse = existingTransactionId
+            log.info("Transaction was already persisted, transactionId {}", transactionId);
+            return existingTransactionId
                     .flatMap(txId -> transactionRepository.findByTransactionId(transaction.accountId(), txId))
                     .orElseThrow(() -> new RuntimeException("Ledger transaction missing"));
-            log.info("Transaction was already persisted, transactionId {}", transactionToUse.transactionId());
         }
-        transactionBuilder.transactionId(transactionToUse.transactionId())
-                .amount(transactionToUse.amount())
-                .accountId(transactionToUse.accountId())
-                .operationTypeId(transactionToUse.operationTypeId());
     }
 }

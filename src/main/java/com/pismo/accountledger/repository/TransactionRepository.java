@@ -16,10 +16,11 @@ import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.pismo.accountledger.util.Constants.TRANSACTION_PREFIX;
+
 @Repository
 @RequiredArgsConstructor
 public class TransactionRepository {
-    private static final String TRANSACTION_PREFIX = "TRANSACTION#";
 
     private final ConfigProperties configProperties;
     private final DynamoDbClient dynamoDbClient;
