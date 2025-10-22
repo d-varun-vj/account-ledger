@@ -17,7 +17,7 @@ import java.util.Map;
 public class StreamHandler implements RequestHandler<DynamodbEvent, String> {
     private static final Logger log = LoggerFactory.getLogger(StreamHandler.class);
     private final DynamoDbClient dynamoDb;
-    private StreamHandler() {
+    public StreamHandler() {
         this.dynamoDb = DynamoDbClient.builder()
                 .endpointOverride(URI.create("http://localstack:4566"))
                 .region(Region.of("ap-south-1"))
@@ -32,28 +32,31 @@ public class StreamHandler implements RequestHandler<DynamodbEvent, String> {
         log.info("Received {} records", event.getRecords().size());
 
         for (DynamodbEvent.DynamodbStreamRecord record : event.getRecords()) {
+            log.info("record.getEventName() {}", record.getEventName());
             if (!"INSERT".equals(record.getEventName())) continue;
             var newImage = record.getDynamodb().getNewImage();
-
+            log.info("newImage {}", newImage);
             if (newImage == null || !(newImage.containsKey("type") && newImage.get("type").getS().equals("TRANSACTION"))) continue;
-
             String accountId = newImage.get("pk").getN();
             String transactionId = newImage.get("sk").getS();
             double amount = Double.parseDouble(newImage.get("amount").getN());
+            log.info("process record accountId {}, transactionId {}, amount {}", accountId, transactionId, amount);
             if (amount >= 0) {
-                deposit(accountId, transactionId, amount);
+                log.info("Deposit amount {}", amount);
+                deposit(accountId, amount);
             } else {
-                withdraw(accountId, transactionId, amount);
+                log.info("Withdraw amount {}", amount);
+                withdraw(accountId, amount);
             }
         }
 
         return "Processed " + event.getRecords().size() + " records.";
     }
 
-    private void deposit(String accountId, String transactionId, double amount) {
+    private void deposit(String accountId, double amount) {
         Map<String, AttributeValue> key = new HashMap<>();
         key.put("pk", AttributeValue.fromN(accountId));
-        key.put("sk", AttributeValue.fromS(transactionId));
+        key.put("sk", AttributeValue.fromS("ACCOUNT#" + accountId));
 
         Map<String, AttributeValue> values = new HashMap<>();
         values.put(":amount", AttributeValue.fromN(String.valueOf(amount)));
@@ -70,10 +73,10 @@ public class StreamHandler implements RequestHandler<DynamodbEvent, String> {
         log.info("💰 Deposited {} to {}", amount, accountId);
     }
 
-    private void withdraw(String accountId, String transactionId, double amount) {
+    private void withdraw(String accountId, double amount) {
         Map<String, AttributeValue> key = new HashMap<>();
         key.put("pk", AttributeValue.fromN(accountId));
-        key.put("sk", AttributeValue.fromS(transactionId));
+        key.put("sk", AttributeValue.fromS("ACCOUNT#" + accountId));
         Map<String, AttributeValue> values = new HashMap<>();
         values.put(":amount", AttributeValue.fromN(String.valueOf(amount)));
         values.put(":zero", AttributeValue.fromN("0"));

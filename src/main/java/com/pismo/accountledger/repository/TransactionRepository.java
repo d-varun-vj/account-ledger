@@ -2,6 +2,7 @@ package com.pismo.accountledger.repository;
 
 import com.pismo.accountledger.config.ConfigProperties;
 import com.pismo.accountledger.dto.Transaction;
+import com.pismo.accountledger.dto.enums.TypeEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -64,6 +65,7 @@ public class TransactionRepository {
                 "sk", AttributeValue.fromS(TRANSACTION_PREFIX + transactionId),
                 "operation_type_id", AttributeValue.fromN(String.valueOf(transaction.operationTypeId())),
                 "amount", AttributeValue.fromN(String.valueOf(transactionAmount)),
+                "type", AttributeValue.fromS(TypeEnum.TRANSACTION.name()),
                 "event_date", AttributeValue.fromS(LocalDateTime.now(ZoneOffset.UTC).toString())
         );
     }

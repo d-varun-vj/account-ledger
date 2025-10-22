@@ -7,7 +7,7 @@ services:
     ports:
       - "4566:4566"   # LocalStack main endpoint
     environment:
-      - SERVICES=dynamodb,lambda
+      - SERVICES=dynamodb,lambda,logs
       - DEBUG=1
       - LAMBDA_EXECUTOR=docker-reuse
     volumes:
@@ -26,7 +26,7 @@ services:
 #      interval: 5s
 #      timeout: 2s
 #      retries: 10
-
+#
 #  account-ledger-app:
 #    build: .
 #    image: accountledger-account-ledger-app:1.0.0
@@ -34,13 +34,12 @@ services:
 #    ports:
 #      - "9040:9040"
 #    depends_on:
-##      - dynamodb-local
 #      - localstack
 #    environment:
 #      AWS_ACCESS_KEY_ID: dummy
 #      AWS_SECRET_ACCESS_KEY: dummy
 #      AWS_REGION: ap-south-1
-#      DYNAMODB_ENDPOINT: http://dynamodb-local:4566
+#      DYNAMODB_ENDPOINT: http://localstack:4566
 
 #volumes:
 #  dynamodb-data:
