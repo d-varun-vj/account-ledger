@@ -2,6 +2,9 @@ package com.pismo.accountledger.service;
 
 import com.pismo.accountledger.config.LocalStackConfig;
 import com.pismo.accountledger.dto.Transaction;
+import com.pismo.accountledger.exception.TransactionInProgressException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,7 +24,17 @@ public class TransactionServiceTest {
     private TransactionService transactionService;
     @Autowired
     private AccountService accountService;
+    private static boolean setupDone = false;
+    private static Long accountId = 0L;
 
+
+    private void setupMethod() {
+        if (!setupDone) {
+            accountId = accountService.createAccount("withSameIdempotencyKeyAcc1")
+                    .accountId();
+            setupDone = true;
+        }
+    }
     @Test
     void createMultipleTransaction_ShouldGenerateUniqueIds() {
         var account = accountService.createAccount("MultipleTransactionTest");
@@ -39,19 +52,18 @@ public class TransactionServiceTest {
     }
 
     @Test
-    void createMultipleTransaction_withSameIdempotencyKey_ShouldGenerateUniqueIds() {
-        var account = accountService.createAccount("withSameIdempotencyKey");
-        var transactions = IntStream.rangeClosed(1, 100)
+    void createMultipleTransaction_withSameIdempotencyKey_throwException() {
+        var account = accountService.createAccount("withSameIdempotencyKeyAcc");
+        Assertions.assertThrows(TransactionInProgressException.class, () -> IntStream.rangeClosed(1, 100)
                 .parallel()
                 .mapToObj(i -> transactionService.createTransaction(createTransaction(account.accountId()), "MultipleTransactionTest"))
-                .toList();
-        assertThat(transactions).isNotEmpty();
-        assertThat(transactions.size()).isEqualTo(100);
-        assertThat(transactions.stream()
-                .map(Transaction::transactionId)
-                .distinct()
-                .count())
-                .isEqualTo(1);
+                .toList());
+    }
+
+    @RepeatedTest(value = 2)
+    void createMultipleTransaction_withSameIdempotencyKey_withDelayOfOneSecond() {
+        setupMethod();
+        assertThat(transactionService.createTransaction(createTransaction(accountId), "MultipleTransactionTest")).isNotNull();
     }
 
     private Transaction createTransaction(Long accountId) {

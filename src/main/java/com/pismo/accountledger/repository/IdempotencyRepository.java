@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
-public class TransactionIdempotencyRepository {
+public class IdempotencyRepository {
     private final ConfigProperties configProperties;
     private final DynamoDbClient dynamoDbClient;
 

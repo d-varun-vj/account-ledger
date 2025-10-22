@@ -18,11 +18,12 @@ import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.pismo.accountledger.util.Constants.ACCOUNT_PREFIX;
+
 @Repository
 @RequiredArgsConstructor
 @Slf4j
 public class AccountRepository {
-    private static final String ACCOUNT_PREFIX = "ACCOUNT#";
 
     private final ConfigProperties configProperties;
     private final DynamoDbClient dynamoDbClient;

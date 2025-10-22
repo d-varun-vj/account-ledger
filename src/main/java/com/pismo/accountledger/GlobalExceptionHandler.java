@@ -4,6 +4,7 @@ import com.pismo.accountledger.exception.AccountNotFoundException;
 import com.pismo.accountledger.exception.DuplicateConstraintException;
 import com.pismo.accountledger.exception.DynamoDBTransactionException;
 import com.pismo.accountledger.exception.InvalidTransactionException;
+import com.pismo.accountledger.exception.TransactionInProgressException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -49,6 +50,14 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleInvalidTransactionException(InvalidTransactionException ex) {
         log.error("Invalid Transaction, {}", ex.getMessage());
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle(ex.getMessage());
+        return problem;
+    }
+
+    @ExceptionHandler(TransactionInProgressException.class)
+    public ProblemDetail handleTransactionInProgressException(TransactionInProgressException ex) {
+        log.error("Transaction in progress: , {}", ex.getMessage());
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle(ex.getMessage());
         return problem;
     }
