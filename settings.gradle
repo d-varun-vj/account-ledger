@@ -1,1 +1,3 @@
 rootProject.name = 'accountledger'
+
+include 'lambda-processor'

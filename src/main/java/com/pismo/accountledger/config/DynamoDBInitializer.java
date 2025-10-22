@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BillingMode;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
@@ -18,6 +19,8 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
+import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 import java.time.LocalDateTime;
@@ -113,8 +116,15 @@ public class DynamoDBInitializer {
                             AttributeDefinition.builder().attributeName("sk").attributeType(ScalarAttributeType.S).build()
                     )
                     .provisionedThroughput(
-                            ProvisionedThroughput.builder().readCapacityUnits(5L).writeCapacityUnits(5L).build()
+                            ProvisionedThroughput.builder()
+                                    .readCapacityUnits(5L)
+                                    .writeCapacityUnits(5L)
+                                    .build()
                     )
+                    .streamSpecification(StreamSpecification.builder()
+                            .streamEnabled(true)
+                            .streamViewType(StreamViewType.NEW_AND_OLD_IMAGES)
+                            .build())
                     .build());
         } catch (ConditionalCheckFailedException e) {
             log.error("account ledger table already exist");

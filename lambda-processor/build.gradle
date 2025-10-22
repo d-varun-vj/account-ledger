@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'distribution'
+}
+
+group = 'com.pismo.lambda-processor'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'software.amazon.awssdk:dynamodb:2.35.10'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.13.0'
+    implementation 'org.slf4j:slf4j-simple:2.0.16'
+}
+tasks.register('buildLambdaZip', Zip) {
+    archiveFileName = 'lambda-processor.zip'
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.runtimeClasspath
+    }
+}
+build.dependsOn buildLambdaZip
