@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
+import software.amazon.awssdk.services.dynamodb.model.Update;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -26,7 +27,8 @@ public class TransactionRepository {
 
     public void saveIdempotentTransaction(Transaction transaction, double transactionAmount, long transactionId,
                                           String idempotencyKey) {
-        Map<String, AttributeValue> idempotencyItem = createAccountLedgerItem(idempotencyKey, transactionId);
+        Map<String, AttributeValue> expressionAttributeValue = expressionAttribute(transaction.operationTypeId(), transaction.amount());
+        Map<String, AttributeValue> idempotencyItem = createIdempotentItem(idempotencyKey, transactionId);
         Map<String, AttributeValue> transactionItem = createTransactionItem(transaction, transactionId, transactionAmount);
         TransactWriteItemsRequest request = TransactWriteItemsRequest.builder()
                 .transactItems(
@@ -38,17 +40,43 @@ public class TransactionRepository {
                                         .build())
                                 .build(),
                         TransactWriteItem.builder()
+                                        .update(Update.builder()
+                                                .tableName(configProperties.getAccountLedgerTable())
+                                                .key(Map.of("pk", AttributeValue.fromN(String.valueOf(transaction.accountId())),
+                                                        "sk", AttributeValue.fromS("ACCOUNT#" + transaction.accountId())))
+                                                .updateExpression(" SET balance = balance + :amount")
+                                                .conditionExpression("attribute_exists(balance) AND ((:isDebit = :trueValue AND balance >= :threshold) OR :isDebit = :falseValue)")// -1000 >= -800 + -300
+                                                .expressionAttributeValues(expressionAttributeValue)
+                                                .build())
+                                .build(),
+                        TransactWriteItem.builder()
                                 .put(Put.builder()
                                         .tableName(configProperties.getAccountLedgerTable())
                                         .item(transactionItem)
                                         .build())
+
                                 .build()
                 )
                 .build();
         dynamoDbClient.transactWriteItems(request);
     }
 
-    private Map<String, AttributeValue> createAccountLedgerItem(String idempotencyKey, long transactionId) {
+    private Map<String, AttributeValue> expressionAttribute(Long operationTypeId, double amount) {
+        boolean isDebit = false;
+        if (operationTypeId != 4) {
+            amount = -amount;
+            isDebit = true;
+        }
+        double threshold = - configProperties.getCreditLimit() - amount;
+        return Map.of(
+                ":amount", AttributeValue.fromN(String.valueOf(amount)),
+                ":threshold", AttributeValue.fromN(String.valueOf(threshold)),
+                ":isDebit", AttributeValue.fromBool(isDebit),
+                ":trueValue", AttributeValue.fromBool(true),
+                ":falseValue", AttributeValue.fromBool(false));
+    }
+
+    private Map<String, AttributeValue> createIdempotentItem(String idempotencyKey, long transactionId) {
         return Map.of(
                 "idempotency_key", AttributeValue.fromS(idempotencyKey),
                 "transaction_id", AttributeValue.fromS("TRANSACTION#" + transactionId),

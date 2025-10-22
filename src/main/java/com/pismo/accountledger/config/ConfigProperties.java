@@ -23,5 +23,7 @@ public class ConfigProperties {
     private String counterTable;
     @Value("${dynamodb.table.txnIdempotency}")
     private String idempotencyTable;
+    @Value("${account.balance.limit}")
+    private Double creditLimit;
 
 }

@@ -3,6 +3,8 @@ package com.pismo.accountledger.service.impl;
 import com.pismo.accountledger.dto.OperationType;
 import com.pismo.accountledger.dto.Transaction;
 import com.pismo.accountledger.dto.enums.TypeEnum;
+import com.pismo.accountledger.exception.CreditLimitReachedException;
+import com.pismo.accountledger.exception.DuplicateConstraintException;
 import com.pismo.accountledger.exception.InvalidTransactionException;
 import com.pismo.accountledger.exception.TransactionInProgressException;
 import com.pismo.accountledger.repository.AccountRepository;
@@ -14,6 +16,7 @@ import com.pismo.accountledger.service.TransactionService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
 import static com.pismo.accountledger.util.Constants.TRANSACTION_PREFIX;
@@ -60,7 +63,20 @@ public class TransactionServiceImpl implements TransactionService {
                     .operationTypeId(transaction.operationTypeId())
                     .build();
         } catch (TransactionCanceledException ex) {
-            log.info("Transaction request already in progress, idempotencyKey {}, transactionId {}", idempotencyKey, transactionId);
+            log.error("Transaction request already in progress, idempotencyKey {}, transactionId {}", idempotencyKey, transactionId);
+            var reasons = ex.cancellationReasons();
+
+            if (reasons != null) {
+                for (int i = 0; i < reasons.size(); i++) {
+                    CancellationReason reason = reasons.get(i);
+                    if ("ConditionalCheckFailed".equals(reason.code())) {
+                        // Only first write (index 0) has condition
+                        if (i == 1) {
+                            throw new CreditLimitReachedException("CreditLimit has reached.");
+                        }
+                    }
+                }
+            }
             throw new TransactionInProgressException();
         }
     }

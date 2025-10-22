@@ -13,6 +13,8 @@ public record Account(
         Long accountId,
         @Schema(description = "Unique document number identifying the customer", example = "12345678900")
         @NotEmpty(message = "documentNumber must not be empty")
-        String documentNumber
+        String documentNumber,
+        @Schema(description = "Account balance amount", example = "100", accessMode = Schema.AccessMode.READ_ONLY)
+        Double balance
 ) {
 }

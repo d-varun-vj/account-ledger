@@ -2,6 +2,7 @@ package com.pismo.accountledger.service;
 
 import com.pismo.accountledger.config.LocalStackConfig;
 import com.pismo.accountledger.dto.Transaction;
+import com.pismo.accountledger.exception.CreditLimitReachedException;
 import com.pismo.accountledger.exception.TransactionInProgressException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
@@ -49,6 +50,35 @@ public class TransactionServiceTest {
                 .distinct()
                 .count())
                 .isEqualTo(100);
+    }
+
+    @Test
+    void createTransaction_whenBalanceReachedCreditLimit_attemptingDebitTransaction_ThrowException() {
+        var account = accountService.createAccount("whenBalanceReachedCreditLimit_attemptingDebitTransaction");
+        Assertions.assertThrows(CreditLimitReachedException.class, ()-> transactionService.createTransaction(Transaction.builder()
+                .amount(1001)
+                .operationTypeId(1L)
+                .accountId(account.accountId())
+                .build(), "whenBalanceReachedCreditLimit_attemptingDebitTransaction"));
+    }
+
+    @Test
+    void createTransaction_whenBalanceReachedCreditLimit_attemptingCreditTransaction_ThrowException() {
+        var account = accountService.createAccount("whenBalanceReachedCreditLimit_attemptingCreditTransaction");
+        transactionService.createTransaction(Transaction.builder()
+                        .amount(1000)
+                        .operationTypeId(1L)
+                        .accountId(account.accountId())
+                        .build(), "whenBalanceReachedCreditLimit_attemptingCreditTransaction");
+        var transaction = transactionService.createTransaction(Transaction.builder()
+                .amount(1002)
+                .operationTypeId(4L)
+                .accountId(account.accountId())
+                .build(), "whenBalanceReachedCreditLimit_attemptingCreditTransaction1");
+        assertThat(transaction).isNotNull();
+        var currentBalance = accountService.getAccount(account.accountId());
+        assertThat(currentBalance).isNotNull();
+        assertThat(currentBalance.balance()).isEqualTo(2.0);
     }
 
     @Test

@@ -40,7 +40,7 @@ public class TransactionControllerTest {
     })
     void createTransaction_shouldReturnCreatedTransaction(Long operationTypeId, String documentNumber,
                                                           double expectedAmount, String idempotencyKey) {
-        var accountCreationRequest = new Account(null, documentNumber);
+        var accountCreationRequest = new Account(null, documentNumber, 0.0);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Idempotency-Key", idempotencyKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -93,7 +93,7 @@ public class TransactionControllerTest {
 
     @Test
     void createTransaction_withoutAccountId_throwValidationException() {
-        var accountCreationRequest = new Account(null, "invalidAccountId");
+        var accountCreationRequest = new Account(null, "invalidAccountId", 0.0);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("Idempotency-Key", "withoutAccountId");
@@ -121,7 +121,7 @@ public class TransactionControllerTest {
 
     @Test
     void createTransaction_withoutAmount_throwValidationException() {
-        var accountCreationRequest = new Account(null, "invalidAmount");
+        var accountCreationRequest = new Account(null, "invalidAmount", 0.0);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("Idempotency-Key", "withoutAmount");
@@ -151,7 +151,7 @@ public class TransactionControllerTest {
 
     @Test
     void createTransaction_withoutOperationTypeId_throwValidationException() {
-        var accountCreationRequest = new Account(null, "invalidOperationId");
+        var accountCreationRequest = new Account(null, "invalidOperationId", 0.0);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("Idempotency-Key", "withoutOperationTypeId");
@@ -180,7 +180,7 @@ public class TransactionControllerTest {
 
     @Test
     void createTransaction_withoutIdempotencyHeader_throwException() {
-        var accountCreationRequest = new Account(null, "withoutIdempotencyHeader");
+        var accountCreationRequest = new Account(null, "withoutIdempotencyHeader", 0.0);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         ResponseEntity<Account> response = restTemplate.exchange(

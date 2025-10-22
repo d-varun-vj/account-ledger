@@ -65,6 +65,7 @@ public class AccountRepository {
                 "pk", AttributeValue.builder().n(accountId).build(),
                 "sk", AttributeValue.builder().s(ACCOUNT_PREFIX + accountId).build(),
                 "type", AttributeValue.builder().s(TypeEnum.ACCOUNT.name()).build(),
+                "balance", AttributeValue.builder().n("0").build(),
                 "created_date", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).toString()).build(),
                 "document_number", AttributeValue.builder().s(documentNumber).build()
         );
@@ -86,6 +87,7 @@ public class AccountRepository {
             var account = Account.builder()
                     .documentNumber(response.item().get("document_number").s())
                     .accountId(accountId)
+                    .balance(Double.parseDouble(response.item().get("balance").n()))
                     .build();
             return Optional.of(account);
         } else {
