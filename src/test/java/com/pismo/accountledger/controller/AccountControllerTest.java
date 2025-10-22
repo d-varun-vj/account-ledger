@@ -30,7 +30,7 @@ public class AccountControllerTest {
 
     @Test
     void createAccount_shouldReturnCreatedAccount_201() {
-        Account request = new Account(null, "12669");
+        Account request = new Account(null, "12669", 0.0);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -47,13 +47,14 @@ public class AccountControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().accountId()).isNotNull();
+        assertThat(response.getBody().balance()).isEqualTo(0.0);
         assertThat(response.getBody().documentNumber()).isEqualTo("12669");
     }
 
     @Test
     void createAccount_shouldReturnConflict_409() {
-        Account first = new Account(null, "126691");
-        Account duplicate = new Account(null, "126691");
+        Account first = new Account(null, "126691", 0.0);
+        Account duplicate = new Account(null, "126691", 0.0);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -82,7 +83,7 @@ public class AccountControllerTest {
 
     @Test
     void getAccount_shouldReturnAccount_200() {
-        Account request = new Account(null, "126692");
+        Account request = new Account(null, "126692", 0.0);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -132,7 +133,7 @@ public class AccountControllerTest {
 
     @Test
     void createAccount_emptyDocumentNumber_throwException_400() {
-        Account request = new Account(null, "");
+        Account request = new Account(null, "", 0.0);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Account> entity = new HttpEntity<>(request, headers);

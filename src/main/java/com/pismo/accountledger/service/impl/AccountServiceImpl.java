@@ -30,6 +30,7 @@ public class AccountServiceImpl implements AccountService {
             return Account.builder()
                     .accountId(accountId)
                     .documentNumber(documentNumber)
+                    .balance(0.0)
                     .build();
         } catch (TransactionCanceledException ex) {
             log.error("Account creation failed, {}", ex.getMessage());
